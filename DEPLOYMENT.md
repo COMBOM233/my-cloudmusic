@@ -226,7 +226,7 @@ ingress:
     pm2 start start-demo.js --name ncm-api
     pm2 save && pm2 startup
 
-> 前端两种部署法：① 只部署 API，前端继续用 GitHub Pages（最省资源，推荐）；② 整站部署：本地构建后把 web/dist 内容复制到 NeteaseCloudMusicApi/public/，直接访问服务器 3000 端口即可（同源模式，无需 API_BASE_URL）。
+> 前端两种部署法：① 只部署 API，前端继续用 GitHub Pages（最省资源，推荐）；② 整站部署：本地构建后把 web/dist 里的 **index.html 和 assets/ 文件夹**复制到 NeteaseCloudMusicApi/public/ 目录内（注意：是复制 dist 的内容进 public，**不是把 dist 文件夹整个放进去**；public 原本的 index.html 会被覆盖，旧 assets 可先清掉），然后直接访问服务器 3000 端口即可（同源模式，无需 API_BASE_URL）。
 
 ### 5.3 海外服务器访问网易云的限制
 

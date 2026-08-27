@@ -15,6 +15,9 @@ if errorlevel 1 (
 )
 echo [3/3] 部署到 API 服务 public 目录...
 cd /d %~dp0
+rem 先清理旧的构建产物（index.html 会被覆盖，assets 整目录清空重放）
+if exist NeteaseCloudMusicApi\public\assets rmdir /s /q NeteaseCloudMusicApi\public\assets
+rem 把 dist 的【内容】（index.html + assets\）复制进 public\，而不是 dist 文件夹本身
 xcopy /y /e /i /q web\dist\* NeteaseCloudMusicApi\public\ >nul
 echo.
 echo 部署完成！请重启「启动演示站.bat」后访问 http://localhost:3000
