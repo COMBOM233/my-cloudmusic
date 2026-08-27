@@ -140,6 +140,16 @@ API 后端（0 元任选其一，服务端代码就是本项目的 NeteaseCloudM
 
 > 不配置 API_BASE_URL 时，构建产物为「同源直连」版（适合本机单进程部署，见方案 A）。
 
+## 日常更新（改代码 → 推送 → 服务器拉取）
+
+1. **本地改完代码后推送**：双击「推送更新.bat」（输入提交说明自动完成），或命令行 `git add -A && git commit -m "说明" && git push origin main`。
+2. **前端自动更新**：推送后 GitHub Actions 会自动重新构建并发布到 GitHub Pages，无需手动操作。
+3. **服务器端拉取并重启**（SSH 登录腾讯云后）：
+
+        cd music_api_demo && git pull && pm2 restart ncm-api
+
+    或使用一键脚本：`bash deploy/update.sh`（自动完成 pull → 依赖更新 → 重启）。
+4. 若前端部署在服务器 public/ 模式（非 GitHub Pages），还需在服务器上重新构建前端（步骤见 DEPLOYMENT.md 第 8 章）。
 ### 环境变量速查
 - PORT：服务端口（默认 3000）
 - HOST：监听地址（默认全部网卡，局域网可访问；若只想本机可设 127.0.0.1）

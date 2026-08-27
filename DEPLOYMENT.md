@@ -20,10 +20,10 @@
 
     # 调试/前台运行（推荐，跳过版本检查的 spawn）
     node start-demo.js
-
+    
     # 官方入口（会联网检查更新，不影响功能）
     node app.js
-
+    
     # 生产常驻（需要 pm2：npm i -g pm2）
     pm2 start start-demo.js --name ncm-api
     pm2 save && pm2 startup        # 开机自启
@@ -49,11 +49,11 @@
 ### 1.3 推荐 .env 配置
 
     PORT=3000
-
+    
     # 固化登录态（强烈推荐）：把演示站里「复制登录 Cookie」按钮得到的内容粘到这里
     # 这样重启服务后依然保持登录（VIP 音质、创建歌单都可用），部署后也无需再扫码
     NETEASE_COOKIE=MUSIC_U=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
+    
     # 开启全局解灰：无版权/会员试听歌曲自动从其他平台取流（可选，默认关闭）
     ENABLE_GENERAL_UNBLOCK=true
     ENABLE_FLAC=true
@@ -116,11 +116,11 @@
 
     # 方法一：winget 安装
     winget install --id Cloudflare.cloudflared
-
+    
     # 方法二：手动安装
     # 下载 https://github.com/cloudflare/cloudflared/releases 的 cloudflared-windows-amd64.exe
     # 改名 cloudflared.exe，放到 C:\cloudflared\，并把 C:\cloudflared 加入系统 PATH
-
+    
     # 验证
     cloudflared --version
 
@@ -207,20 +207,20 @@ ingress:
     # 安装 Node.js 20
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt install -y nodejs git
-
+    
     # 获取代码（方式一：直接 clone 你的 GitHub 仓库，推荐）
     git clone https://github.com/你的用户名/你的仓库名.git
     cd 你的仓库名/NeteaseCloudMusicApi
-
+    
     # 安装依赖
     npm install --ignore-scripts
-
+    
     # 配置 .env（同 1.3，含 NETEASE_COOKIE 与解灰选项）
     nano .env
-
+    
     # 启动（前台调试）
     node start-demo.js
-
+    
     # 或常驻（推荐）：
     sudo npm install -g pm2
     pm2 start start-demo.js --name ncm-api
@@ -251,7 +251,7 @@ ingress:
 
     # 方式一（推荐）：控制台网页终端
     腾讯云控制台 → 轻量应用服务器 / CVM → 实例列表 → 「登录」→ OrcaTerm 网页终端
-
+    
     # 方式二：本机 SSH
     ssh root@你的公网IP        # 输入购买时设置的密码，首次登录可能要求改密
 
@@ -266,7 +266,7 @@ ingress:
     # 方式一（推荐，需先把项目推到 GitHub，仓库公开或用 SSH key）
     git clone https://github.com/你的用户名/你的仓库.git
     cd 你的仓库/NeteaseCloudMusicApi
-
+    
     # 方式二（还没推 GitHub）：本地打包上传，控制台「文件管理」或 scp 上传后解压即可
 
 **5.4.5 安装依赖、配置、启动**
@@ -282,7 +282,7 @@ ingress:
 
     # 轻量应用服务器：控制台 → 实例 → 「防火墙」→ 添加规则
     协议 TCP / 端口 3000 / 来源 0.0.0.0/0
-
+    
     # CVM：控制台 → 安全组 → 入站规则 → 添加
     TCP:3000，来源 0.0.0.0/0
 
@@ -328,7 +328,7 @@ ingress:
 ### 8.1 本地改完代码后推送
 
     # 方式一（推荐）：双击根目录「推送更新.bat」，输入提交说明，自动 add/commit/push
-
+    
     # 方式二：命令行
     git add -A
     git commit -m "本次修改说明"
@@ -368,6 +368,6 @@ SSH 登录腾讯云服务器后执行：
 - **播放地址是 null / 只能试听？** 未登录或非 VIP：先登录/配置 NETEASE_COOKIE；仍不行开启解灰。
 - **隧道访问不了？** `cloudflared tunnel ingress validate` 检查配置；看 cloudflared 日志；确认 3000 端口服务在跑。
 - **cookie 失效（需要重新登录）？** 网易云 cookie 会过期，重新扫码登录并更新 .env 的 NETEASE_COOKIE，重启服务。
-- **前端能打开但接口全部 404？** 几乎都是**部署了旧版构建产物**：旧版前端请求带 `/api` 前缀（如 `/api/search`），而 API 服务没有该路由。确认方法：浏览器 F12 → Network 看请求是 `/search` 还是 `/api/search`；或服务器上 `curl "http://localhost:3000/search?keywords=test"` —— 返回 JSON 则 API 正常、纯属前端构建过旧。修复：用当前代码重新构建并重新上传（见 5.4.7 服务器直接构建的方式）。
+- **GitHub Pages 页面打不开/白屏？** 检查 Actions 是否成功、Pages 是否选了 gh-pages 分支；F12 看资源是否 404（确认构建时 base 是 ./）。
 - **跨域报错？** CORS_ALLOW_ORIGIN 保持 *；确认 API_BASE_URL 填写正确且不带尾部斜杠问题。
 - **.env 会被提交到 GitHub 吗？** 不会，已加入 .gitignore；推送前可用 `git status` 确认。

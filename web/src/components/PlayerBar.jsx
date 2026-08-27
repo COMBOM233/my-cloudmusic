@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useStore, getState, setState, toast, nextSong, prevSong } from '../store.js'
 import { resolveSongUrl, lyric } from '../api/client.js'
 import { audio } from '../audio.js'
@@ -7,17 +7,14 @@ import { formatTime, parseLyric } from '../utils.js'
 // 底部播放器：全局唯一 <audio> 的控制中心
 // 切歌时调用 /song/url 拿播放地址、/lyric 拿歌词
 export default function PlayerBar() {
-  const { queue, queueIndex, playing } = useStore()
+  const { queue, queueIndex, playing, mode } = useStore()
   const song = queue[queueIndex] || null
   const [progress, setProgress] = useState(0)   // 0-100
   const [current, setCurrent] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(0.8)
-  const [mode, setMode] = useState('order')     // order | single | random
   const [loading, setLoading] = useState(false)
   const [quality, setQuality] = useState(null)  // 当前实际音质 { br, level, source }
-  const modeRef = useRef(mode)
-  modeRef.current = mode
 
   // 当前歌曲变化 → 获取播放地址 + 歌词
   useEffect(() => {
@@ -74,16 +71,14 @@ export default function PlayerBar() {
     const onPlay = () => setState({ playing: true })
     const onPause = () => setState({ playing: false })
     const onEnded = () => {
-      const { queue, queueIndex } = getState()
-      if (modeRef.current === 'single') {
+      // 播放结束：单曲循环→重播本首；列表循环→顺序播放到尾回第一首；随机播放→随机挑下一首
+      // （列表循环与随机播放的逻辑都在 store.js 的 nextSong 里按 mode 处理）
+      const { mode } = getState()
+      if (mode === 'single') {
         audio.currentTime = 0
         audio.play().catch(() => {})
-      } else if (modeRef.current === 'random') {
-        nextSong()
-      } else if (queueIndex < queue.length - 1) {
-        nextSong()
       } else {
-        setState({ playing: false })  // 顺序播放到末尾则停止
+        nextSong()
       }
     }
     audio.addEventListener('timeupdate', onTime)
@@ -148,7 +143,7 @@ export default function PlayerBar() {
       </div>
       <div className="pb-center">
         <div className="pb-btns">
-          <button className="btn-icon" title={'播放模式：' + modeLabel} onClick={() => setMode((m) => (m === 'order' ? 'single' : m === 'single' ? 'random' : 'order'))}>
+          <button className="btn-icon" title={'播放模式：' + modeLabel} onClick={() => setState({ mode: mode === 'order' ? 'single' : mode === 'single' ? 'random' : 'order' })}>
             {mode === 'random' ? '🔀' : mode === 'single' ? '🔁' : '🔂'}
           </button>
           <button className="btn-icon" title="上一首" onClick={prevSong}>⏮</button>

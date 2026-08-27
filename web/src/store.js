@@ -11,6 +11,7 @@ export let state = {
   queue: [],           // 播放队列（normalize 后的歌曲对象）
   queueIndex: -1,      // 当前播放索引
   playing: false,      // 是否正在播放
+  mode: 'order',       // 播放模式：order(列表循环) | single(单曲循环) | random(随机播放)
   currentLyric: [],    // 当前歌曲歌词（[{time, text}]）
   view: { name: 'toplists', params: null },  // 当前页面 {name, params}
   songDetailId: null,  // 歌曲详情弹层
@@ -76,13 +77,30 @@ export function playAll(songs) {
 
 export function nextSong() {
   if (!state.queue.length) return
-  const idx = state.queueIndex + 1 >= state.queue.length ? 0 : state.queueIndex + 1
+  let idx
+  if (state.mode === 'random' && state.queue.length > 1) {
+    // 随机播放：随机挑一首（避免与当前相同）
+    do {
+      idx = Math.floor(Math.random() * state.queue.length)
+    } while (idx === state.queueIndex)
+  } else {
+    // 列表循环：顺序播放，播完最后一首回到第一首
+    idx = state.queueIndex + 1 >= state.queue.length ? 0 : state.queueIndex + 1
+  }
   setState({ queueIndex: idx, playing: true })
 }
 
 export function prevSong() {
   if (!state.queue.length) return
-  const idx = state.queueIndex - 1 < 0 ? state.queue.length - 1 : state.queueIndex - 1
+  let idx
+  if (state.mode === 'random' && state.queue.length > 1) {
+    // 随机播放：随机挑一首（避免与当前相同）
+    do {
+      idx = Math.floor(Math.random() * state.queue.length)
+    } while (idx === state.queueIndex)
+  } else {
+    idx = state.queueIndex - 1 < 0 ? state.queue.length - 1 : state.queueIndex - 1
+  }
   setState({ queueIndex: idx, playing: true })
 }
 
