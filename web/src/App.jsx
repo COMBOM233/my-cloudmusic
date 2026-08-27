@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useStore, setState, navigate, toast } from './store.js'
-import { logout, loginStatus, setAuthCookie } from './api/client.js'
+import { logout, loginStatus, setAuthCookie, getAuthCookie } from './api/client.js'
 import ToplistsView from './views/ToplistsView.jsx'
 import PlaylistsView from './views/PlaylistsView.jsx'
 import PlaylistDetailView from './views/PlaylistDetailView.jsx'
@@ -44,6 +44,18 @@ export default function App() {
     toast('已退出登录')
   }
 
+  // 复制登录 cookie：部署到服务器时填入 .env 的 NETEASE_COOKIE 即可固化登录态
+  const copyCookie = async () => {
+    const c = getAuthCookie()
+    if (!c) { toast('当前没有登录 Cookie（请先扫码登录）', 'warn'); return }
+    try {
+      await navigator.clipboard.writeText(c)
+      toast('登录 Cookie 已复制 ✅ 可填入 .env 的 NETEASE_COOKIE')
+    } catch {
+      toast('复制失败，请手动从 /login/qr/check 响应中复制', 'error')
+    }
+  }
+
   let content
   if (view.name === 'toplists') content = <ToplistsView />
   else if (view.name === 'playlists') content = <PlaylistsView />
@@ -76,7 +88,10 @@ export default function App() {
               <img className="avatar" src={user.avatarUrl + '?param=60y60'} alt="" />
               <div className="user-meta">
                 <p className="user-name" title={user.nickname}>{user.nickname}</p>
-                <button className="link" onClick={doLogout}>退出登录</button>
+                <div className="user-links">
+                  <button className="link" onClick={copyCookie}>复制登录 Cookie</button>
+                  <button className="link" onClick={doLogout}>退出登录</button>
+                </div>
               </div>
             </div>
           ) : (

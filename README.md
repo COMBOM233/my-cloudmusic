@@ -122,6 +122,24 @@ VIP 歌曲的播放权跟着**登录 cookie** 走。扫码登录你的 VIP 账�
     cd NeteaseCloudMusicApi && npm install --ignore-scripts
     PORT=3000 node start-demo.js          # 或 pm2 start start-demo.js 常驻
 
+### 方案 D：GitHub Pages 托管前端（0 元）+ 免费 API 后端
+
+想「把项目放上 GitHub 就得到一个听歌网站」？——**前端可以，API 不行**（GitHub Pages 只能托管静态文件，无法运行 Node.js 服务）。所以采用「前后端分离」：
+
+1. 把项目推到你的 GitHub 仓库（本目录已初始化 git 并提交，直接推送即可）。
+2. 在 仓库 Settings → Pages 里把来源设为 **gh-pages 分支**（/root）。
+3. 在 仓库 Settings → Secrets and variables → Actions 里新建 Secret：
+   **API_BASE_URL = 你的 API 后端地址**（见下方后端选项）。
+4. 之后每次 push，GitHub Actions 会自动构建前端并发布到 gh-pages，
+   得到 https://用户名.github.io/仓库名 的听歌网站界面。
+
+API 后端（0 元任选其一，服务端代码就是本项目的 NeteaseCloudMusicApi/）：
+- 自己电脑跑「启动演示站.bat」+ Cloudflare 隧道（快速隧道免费，地址每次变；用命名隧道可得固定域名）。
+- Oracle Cloud 永久免费 ARM 实例（7x24 在线）。
+- 国内轻量 VPS（约 30-60 元/月，访问网易云最稳）。
+
+> 不配置 API_BASE_URL 时，构建产物为「同源直连」版（适合本机单进程部署，见方案 A）。
+
 ### 环境变量速查
 - PORT：服务端口（默认 3000）
 - HOST：监听地址（默认全部网卡，局域网可访问；若只想本机可设 127.0.0.1）

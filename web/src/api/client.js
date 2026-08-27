@@ -50,6 +50,8 @@ export async function request(path, params = {}, opts = {}) {
   })
   // 已登录时自动携带 cookie
   if (authCookie && !query.has('cookie')) query.set('cookie', authCookie)
+  // 可选：构建时注入 VITE_REAL_IP（如 116.25.146.177），海外部署时让网易云认为请求来自国内
+  if (import.meta.env.VITE_REAL_IP) query.set('realIP', import.meta.env.VITE_REAL_IP)
 
   // 日志中隐藏 cookie 明文
   const queryForLog = { ...Object.fromEntries(query) }
