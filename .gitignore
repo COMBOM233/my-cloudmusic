@@ -1,0 +1,15 @@
+# 依赖
+node_modules/
+NeteaseCloudMusicApi/node_modules/
+
+# 构建产物
+web/dist/
+NeteaseCloudMusicApi/public/assets/
+NeteaseCloudMusicApi/public/index.html
+
+# 缓存与临时文件
+.npm-cache/
+*.log
+
+# 参考项目（体积大，不需要提交）
+_reference/

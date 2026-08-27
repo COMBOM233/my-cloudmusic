@@ -1,0 +1,43 @@
+name: 部署前端到 GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+        working-directory: web
+
+      - name: 构建前端
+        run: npm run build
+        working-directory: web
+        env:
+          # 重要：在 仓库 Settings → Secrets and variables → Actions 里配置
+          #   Secrets: API_BASE_URL = 你的 API 后端地址（如 https://xxx.trycloudflare.com）
+          # 不配置时构建出「同源直连」版本（适合本机单进程部署，不适合 GitHub Pages）
+          VITE_API_BASE: ${{ secrets.API_BASE_URL }}
+
+      - name: 部署到 gh-pages 分支
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: web/dist
+          publish_branch: gh-pages
