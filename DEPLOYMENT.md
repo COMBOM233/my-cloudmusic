@@ -323,6 +323,45 @@ ingress:
 - [ ] 手机（外网）能访问且能播放
 - [ ] 解灰（若开启）：无版权歌曲也能播放
 
+## 8. 日常更新流程（改代码 → 推送 → 服务器拉取）
+
+### 8.1 本地改完代码后推送
+
+    # 方式一（推荐）：双击根目录「推送更新.bat」，输入提交说明，自动 add/commit/push
+
+    # 方式二：命令行
+    git add -A
+    git commit -m "本次修改说明"
+    git push origin main
+
+说明：
+- 首次推送前需关联远程（本项目已完成）：`git remote add origin https://github.com/COMBOM233/my-cloudmusic.git`
+- HTTPS 认证：push 时提示输入用户名与密码，密码填 **Personal Access Token**（GitHub → Settings → Developer settings → Personal access tokens → Generate new token，勾选 repo 权限）。也可改用 SSH 免密。
+- 推送后 GitHub Actions 自动重新构建前端并发布到 gh-pages，前端无需手动操作（可在仓库 Actions 页看进度）。
+
+### 8.2 服务器拉取更新
+
+SSH 登录腾讯云服务器后执行：
+
+    cd music_api_demo
+    git pull
+    pm2 restart ncm-api
+
+或直接运行仓库自带脚本：
+
+    bash deploy/update.sh
+
+该脚本自动完成：git pull → npm install → pm2 restart。
+**注意**：
+- .env 已被 gitignore，不会被覆盖，服务器上的登录 Cookie 保持不变；
+- 若前端也部署在服务器 public/ 模式（而不是 GitHub Pages），需要额外重新构建前端——脚本里有注释掉的步骤，取消注释即可。
+
+### 8.3 常见情况处理
+
+- **push 被拒（远程有新提交）**：先 `git pull --rebase` 再 `git push`。
+- **服务器 git pull 报冲突**：服务器上有本地改动，先 `git stash` 再 pull。
+- **改了什么**：`git status` 看改动列表，`git diff` 看具体差异。
+- **前端没更新**：检查 Actions 是否跑完；确认 Settings → Pages 指向 gh-pages 分支。
 ## 7. 常见问题（FAQ）
 
 - **扫码登录一直失败？** 确认本机能访问 music.163.com；换网络（如手机热点）排除 IP 风控；稍后再试。
