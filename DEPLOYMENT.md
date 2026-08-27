@@ -368,6 +368,6 @@ SSH 登录腾讯云服务器后执行：
 - **播放地址是 null / 只能试听？** 未登录或非 VIP：先登录/配置 NETEASE_COOKIE；仍不行开启解灰。
 - **隧道访问不了？** `cloudflared tunnel ingress validate` 检查配置；看 cloudflared 日志；确认 3000 端口服务在跑。
 - **cookie 失效（需要重新登录）？** 网易云 cookie 会过期，重新扫码登录并更新 .env 的 NETEASE_COOKIE，重启服务。
-- **GitHub Pages 页面打不开/白屏？** 检查 Actions 是否成功、Pages 是否选了 gh-pages 分支；F12 看资源是否 404（确认构建时 base 是 ./）。
+- **前端能打开但接口全部 404？** 几乎都是**部署了旧版构建产物**：旧版前端请求带 `/api` 前缀（如 `/api/search`），而 API 服务没有该路由。确认方法：浏览器 F12 → Network 看请求是 `/search` 还是 `/api/search`；或服务器上 `curl "http://localhost:3000/search?keywords=test"` —— 返回 JSON 则 API 正常、纯属前端构建过旧。修复：用当前代码重新构建并重新上传（见 5.4.7 服务器直接构建的方式）。
 - **跨域报错？** CORS_ALLOW_ORIGIN 保持 *；确认 API_BASE_URL 填写正确且不带尾部斜杠问题。
 - **.env 会被提交到 GitHub 吗？** 不会，已加入 .gitignore；推送前可用 `git status` 确认。
