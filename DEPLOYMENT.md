@@ -239,6 +239,80 @@ ingress:
 
 ---
 
+### 5.4 腾讯云免费服务器部署（分步实操）
+
+**5.4.1 关于免费试用机**
+
+- 腾讯云对新用户提供轻量应用服务器 / CVM 免费试用（常见 1核2G~2核4G，时长 15 天~3 个月不等，需实名认证）。
+- 免费机适合先跑通验证；**到期后数据可能被回收**，要么按活动价续费，要么重装。代码都在 Git 里，重装很快，不用担心。
+- 开通时系统建议选 **Ubuntu 22.04 / 24.04**（下文命令基于 Ubuntu；CentOS 变体见 5.4.8）。
+
+**5.4.2 登录服务器**
+
+    # 方式一（推荐）：控制台网页终端
+    腾讯云控制台 → 轻量应用服务器 / CVM → 实例列表 → 「登录」→ OrcaTerm 网页终端
+
+    # 方式二：本机 SSH
+    ssh root@你的公网IP        # 输入购买时设置的密码，首次登录可能要求改密
+
+**5.4.3 安装 Node.js 20**
+
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y nodejs git
+    node -v                     # 应显示 v20.x
+
+**5.4.4 获取项目代码**
+
+    # 方式一（推荐，需先把项目推到 GitHub，仓库公开或用 SSH key）
+    git clone https://github.com/你的用户名/你的仓库.git
+    cd 你的仓库/NeteaseCloudMusicApi
+
+    # 方式二（还没推 GitHub）：本地打包上传，控制台「文件管理」或 scp 上传后解压即可
+
+**5.4.5 安装依赖、配置、启动**
+
+    npm install --ignore-scripts --no-audit --no-fund
+    nano .env                   # 参考 1.3；把演示站「复制登录 Cookie」的内容填入 NETEASE_COOKIE
+    node start-demo.js          # 前台试运行，确认无报错后 Ctrl+C
+    sudo npm install -g pm2
+    pm2 start start-demo.js --name ncm-api
+    pm2 save && pm2 startup     # 常驻 + 开机自启
+
+**5.4.6 放行端口（必做！否则外网访问不了）**
+
+    # 轻量应用服务器：控制台 → 实例 → 「防火墙」→ 添加规则
+    协议 TCP / 端口 3000 / 来源 0.0.0.0/0
+
+    # CVM：控制台 → 安全组 → 入站规则 → 添加
+    TCP:3000，来源 0.0.0.0/0
+
+> 只给自己用的话，来源可只填你的家庭宽带公网 IP，更安全。
+
+**5.4.7 验证**
+
+    # 浏览器打开下面地址，应返回 JSON
+    http://你的公网IP:3000/search?keywords=海阔天空
+
+- 完整站点：把前端产物复制到 public/（见 5.2 备注）后，访问 `http://你的公网IP:3000` 即完整网站；
+- 或前端继续用 GitHub Pages，把 `API_BASE_URL` 设为 `http://你的公网IP:3000`（注意 GitHub Pages 是 https，访问 http 后端属“混合内容”，部分浏览器会拦——此时建议后端套 Cloudflare 隧道转 https，见第 3 章）。
+
+**5.4.8 备案与域名说明**
+
+- 不绑域名、用 IP + 3000 端口：**无需备案**，个人自用推荐。
+- 大陆节点想用域名（80/443）：必须 ICP 备案（免费，1~3 周），期间可先用 IP:3000。
+- 香港/新加坡节点：免备案，但访问网易云可能有地区限制（见 5.3，用 realIP 或解灰缓解）。
+
+**5.4.9 一键脚本**
+
+仓库自带 `deploy/tencent-setup.sh`，Ubuntu 系统一条命令完成 5.4.3~5.4.5：
+
+    bash deploy/tencent-setup.sh https://github.com/你的用户名/你的仓库.git
+    # 也可顺带传入登录 Cookie：
+    bash deploy/tencent-setup.sh https://github.com/你的用户名/你的仓库.git "MUSIC_U=xxxx"
+
+脚本会：装 Node → 克隆代码 → 装依赖 → 生成 .env → pm2 常驻 → 输出访问地址与放行端口提示。
+---
+
 ## 6. 部署后验证清单
 
 - [ ] `curl http://localhost:3000/search?keywords=海阔天空` 返回 code 200

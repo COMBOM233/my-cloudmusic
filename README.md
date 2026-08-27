@@ -115,7 +115,7 @@ VIP 歌曲的播放权跟着**登录 cookie** 走。扫码登录你的 VIP 账�
 ### 方案 C：云服务器 7x24 在线（0 元 ~ 几十元/月）
 - Oracle Cloud 永久免费 ARM 实例（4 核 24G 内存）——注册后长期免费，适合自己用。
 - 海外便宜 VPS（RackNerd 等约 $10-20/年）：注意海外 IP 访问网易云部分内容可能受限（可用 realIP 参数缓解）。
-- 国内轻量服务器（腾讯云/阿里云约 30-60 元/月）：访问网易云最稳，但绑定域名需 ICP 备案（不备案可用 IP + 非 80 端口）。
+- 国内轻量服务器（腾讯云/阿里云约 30-60 元/月）：访问网易云最稳，但绑定域名需 ICP 备案（不备案可用 IP + 非 80 端口）。腾讯云免费试用机部署步骤见 DEPLOYMENT.md 5.4，附一键脚本 deploy/tencent-setup.sh。
 - 部署步骤（Ubuntu 示例）：
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt install -y nodejs
     # 把整个项目上传到服务器（含已构建好的 public/），然后：
