@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useStore, getState, setState, toast, nextSong, prevSong } from '../store.js'
+import { useStore, getState, setState, toast, nextSong, prevSong, setMode } from '../store.js'
 import { resolveSongUrl, lyric } from '../api/client.js'
 import { audio } from '../audio.js'
 import { formatTime, parseLyric } from '../utils.js'
@@ -71,7 +71,7 @@ export default function PlayerBar() {
     const onPlay = () => setState({ playing: true })
     const onPause = () => setState({ playing: false })
     const onEnded = () => {
-      // 播放结束：单曲循环→重播本首；列表循环→顺序播放到尾回第一首；随机播放→随机挑下一首
+      // 播放结束：单曲循环→重播本首；列表循环→顺序到尾回第一首；随机（洗牌）→沿洗牌顺序播下一首
       // （列表循环与随机播放的逻辑都在 store.js 的 nextSong 里按 mode 处理）
       const { mode } = getState()
       if (mode === 'single') {
@@ -143,7 +143,7 @@ export default function PlayerBar() {
       </div>
       <div className="pb-center">
         <div className="pb-btns">
-          <button className="btn-icon" title={'播放模式：' + modeLabel} onClick={() => setState({ mode: mode === 'order' ? 'single' : mode === 'single' ? 'random' : 'order' })}>
+          <button className="btn-icon" title={'播放模式：' + modeLabel} onClick={() => setMode(mode === 'order' ? 'single' : mode === 'single' ? 'random' : 'order')}>
             {mode === 'random' ? '🔀' : mode === 'single' ? '🔁' : '🔂'}
           </button>
           <button className="btn-icon" title="上一首" onClick={prevSong}>⏮</button>

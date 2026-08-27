@@ -11,7 +11,8 @@ export let state = {
   queue: [],           // 播放队列（normalize 后的歌曲对象）
   queueIndex: -1,      // 当前播放索引
   playing: false,      // 是否正在播放
-  mode: 'order',       // 播放模式：order(列表循环) | single(单曲循环) | random(随机播放)
+  mode: 'order',       // 播放模式：order(列表循环) | single(单曲循环) | random(随机/洗牌播放)
+  shuffleOrder: null,  // 随机模式的播放顺序（队列下标的打乱序列）；非随机模式为 null
   currentLyric: [],    // 当前歌曲歌词（[{time, text}]）
   view: { name: 'toplists', params: null },  // 当前页面 {name, params}
   songDetailId: null,  // 歌曲详情弹层
@@ -54,35 +55,69 @@ export function navigate(name, params = null) {
 }
 
 // ---------- 播放控制 ----------
+
+// 洗牌（Fisher-Yates）：生成「当前歌排第一、其余打乱」的播放顺序表
+function buildShuffleOrder(queue, currentIndex) {
+  const n = queue.length
+  const rest = []
+  for (let i = 0; i < n; i++) if (i !== currentIndex) rest.push(i)
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const tmp = rest[i]
+    rest[i] = rest[j]
+    rest[j] = tmp
+  }
+  return [currentIndex, ...rest]
+}
+
+// 切换播放模式：进入随机时生成洗牌顺序（当前歌第一，其余打乱）；退出随机时清除
+export function setMode(mode) {
+  if (mode === state.mode) return
+  let shuffleOrder = null
+  if (mode === 'random') {
+    shuffleOrder = buildShuffleOrder(state.queue, state.queueIndex)
+  }
+  setState({ mode, shuffleOrder })
+}
+
 // 播放一首歌；若传入 queue 则把整个列表作为播放队列
 export function playSong(song, queue = null) {
+  let q, idx
   if (queue && queue.length) {
-    const idx = queue.findIndex((s) => s.id === song.id)
-    setState({ queue, queueIndex: idx >= 0 ? idx : 0, playing: true })
+    const i = queue.findIndex((s) => s.id === song.id)
+    q = queue
+    idx = i >= 0 ? i : 0
   } else {
-    const idx = state.queue.findIndex((s) => s.id === song.id)
-    if (idx >= 0) {
-      setState({ queueIndex: idx, playing: true })
+    const i = state.queue.findIndex((s) => s.id === song.id)
+    if (i >= 0) {
+      q = state.queue
+      idx = i
     } else {
-      setState({ queue: [...state.queue, song], queueIndex: state.queue.length, playing: true })
+      q = [...state.queue, song]
+      idx = state.queue.length
     }
   }
+  const patch = { queue: q, queueIndex: idx, playing: true }
+  // 随机模式下队列变化后重新洗牌（保持当前歌第一）
+  if (state.mode === 'random') patch.shuffleOrder = buildShuffleOrder(q, idx)
+  setState(patch)
 }
 
 // 整张列表播放（从第一首开始）
 export function playAll(songs) {
   if (!songs.length) return
-  setState({ queue: songs, queueIndex: 0, playing: true })
+  const patch = { queue: songs, queueIndex: 0, playing: true }
+  if (state.mode === 'random') patch.shuffleOrder = buildShuffleOrder(songs, 0)
+  setState(patch)
 }
 
+// 下一首：随机模式沿洗牌顺序走（到尾回开头）；其他模式顺序循环
 export function nextSong() {
   if (!state.queue.length) return
   let idx
-  if (state.mode === 'random' && state.queue.length > 1) {
-    // 随机播放：随机挑一首（避免与当前相同）
-    do {
-      idx = Math.floor(Math.random() * state.queue.length)
-    } while (idx === state.queueIndex)
+  if (state.mode === 'random' && state.shuffleOrder && state.shuffleOrder.length) {
+    const pos = state.shuffleOrder.indexOf(state.queueIndex)
+    idx = state.shuffleOrder[(pos + 1) % state.shuffleOrder.length]
   } else {
     // 列表循环：顺序播放，播完最后一首回到第一首
     idx = state.queueIndex + 1 >= state.queue.length ? 0 : state.queueIndex + 1
@@ -90,14 +125,14 @@ export function nextSong() {
   setState({ queueIndex: idx, playing: true })
 }
 
+// 上一首：随机模式沿洗牌顺序回退（到开头则回末尾）；其他模式顺序回退
 export function prevSong() {
   if (!state.queue.length) return
   let idx
-  if (state.mode === 'random' && state.queue.length > 1) {
-    // 随机播放：随机挑一首（避免与当前相同）
-    do {
-      idx = Math.floor(Math.random() * state.queue.length)
-    } while (idx === state.queueIndex)
+  if (state.mode === 'random' && state.shuffleOrder && state.shuffleOrder.length) {
+    const pos = state.shuffleOrder.indexOf(state.queueIndex)
+    const len = state.shuffleOrder.length
+    idx = state.shuffleOrder[(pos - 1 + len) % len]
   } else {
     idx = state.queueIndex - 1 < 0 ? state.queue.length - 1 : state.queueIndex - 1
   }
