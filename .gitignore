@@ -10,6 +10,7 @@ NeteaseCloudMusicApi/public/index.html
 # 缓存与临时文件
 .npm-cache/
 *.log
+._cache*
 
 # 环境配置（含登录 cookie，绝不能提交！）
 .env
