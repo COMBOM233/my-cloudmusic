@@ -6,7 +6,7 @@ import { useLike } from '../useLike.js'
 // 歌曲行（列表里的一行）：序号 / 封面 / 歌名 / 歌手 / 专辑 / 时长
 // 悬停时出现操作按钮：播放 ▶、红心 ❤️、加入歌单 ➕
 export default function SongRow({ song, index, queue, manage = false, onRemove }) {
-  const { myPlaylists, queueIndex, queue: curQueue } = useStore()
+  const { user, myPlaylists, queueIndex, queue: curQueue } = useStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const isCurrent = curQueue[queueIndex]?.id === song.id
   const { liked, toggle: toggleLike } = useLike(song.id)

@@ -12,6 +12,9 @@ NeteaseCloudMusicApi/public/index.html
 *.log
 ._cache*
 
+# 冒烟测试打包产物
+web/smoke.out.mjs
+
 # 环境配置（含登录 cookie，绝不能提交！）
 .env
 NeteaseCloudMusicApi/.env

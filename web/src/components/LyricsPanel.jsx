@@ -26,8 +26,8 @@ export default function LyricsPanel() {
 
   // 高亮行变化时自动滚动到中间
   useEffect(() => {
-    if (active >= 0 && listRef.current?.children?.[active]) {
-      listRef.current.children[active].scrollIntoView({ block: 'center', behavior: 'smooth' })
+    if (active >= 0) {
+      listRef.current?.children?.[active]?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
     }
   }, [active])
 

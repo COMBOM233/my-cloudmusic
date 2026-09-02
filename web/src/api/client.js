@@ -24,6 +24,10 @@ function emit(log) {
   listeners.forEach((fn) => fn(log))
 }
 
+// ---------- 环境变量（兼容 Vite 构建与普通 Node 运行） ----------
+const META_ENV =
+  typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {}
+
 // ---------- 登录 cookie ----------
 // 扫码登录成功后，把服务端返回的 cookie 字符串保存在这里；
 // 之后所有请求都会自动带上 ?cookie=xxx（该库支持这个参数，等价于浏览器 Cookie 头），
@@ -51,7 +55,7 @@ export async function request(path, params = {}, opts = {}) {
   // 已登录时自动携带 cookie
   if (authCookie && !query.has('cookie')) query.set('cookie', authCookie)
   // 可选：构建时注入 VITE_REAL_IP（如 116.25.146.177），海外部署时让网易云认为请求来自国内
-  if (import.meta.env.VITE_REAL_IP) query.set('realIP', import.meta.env.VITE_REAL_IP)
+  if (META_ENV.VITE_REAL_IP) query.set('realIP', META_ENV.VITE_REAL_IP)
 
   // 日志中隐藏 cookie 明文
   const queryForLog = { ...Object.fromEntries(query) }
@@ -62,7 +66,7 @@ export async function request(path, params = {}, opts = {}) {
   //   1) 构建时注入的 VITE_API_BASE（如部署到 GitHub Pages 时指向独立 API 后端）
   //   2) 开发模式走 Vite 代理 /api
   //   3) 生产模式同源直连（前端由 API 服务直接托管时）
-  const API_BASE = import.meta.env.VITE_API_BASE || (import.meta.env.PROD ? '' : '/api')
+  const API_BASE = META_ENV.VITE_API_BASE || (META_ENV.PROD ? '' : '/api')
   const url = API_BASE + path + (qs ? '?' + qs : '')
   const start = Date.now()
   let status = null
