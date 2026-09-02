@@ -14,20 +14,22 @@ import LyricsPanel from './components/LyricsPanel.jsx'
 import ApiLogDrawer from './components/ApiLogDrawer.jsx'
 import LoginModal from './components/LoginModal.jsx'
 import SongDetailModal from './components/SongDetailModal.jsx'
+import { IconHome, IconCompass, IconLibrary, IconSearch, IconBook, IconTerminal, IconUser } from './components/icons.jsx'
 
+// 侧边栏导航（Melodia 风格：SVG 图标 + 激活态强调条）
 const NAV = [
-  { name: 'toplists', label: '🏆 排行榜' },
-  { name: 'playlists', label: '🎵 歌单广场' },
-  { name: 'my', label: '📁 我的歌单' },
-  { name: 'search', label: '🔍 搜索' },
-  { name: 'docs', label: '📖 API 使用说明' },
+  { name: 'toplists', label: '首页', icon: IconHome },
+  { name: 'playlists', label: '发现', icon: IconCompass },
+  { name: 'my', label: '我的歌单', icon: IconLibrary },
+  { name: 'search', label: '搜索', icon: IconSearch },
+  { name: 'docs', label: 'API 文档', icon: IconBook },
 ]
 
 export default function App() {
   const s = useStore()
   const { view, user, toasts } = s
 
-  // 启动时恢复登录态（服务端 cookie 若仍在则自动恢复）
+  // 启动时恢复登录态
   useEffect(() => {
     loginStatus()
       .then((res) => {
@@ -37,14 +39,11 @@ export default function App() {
       .catch(() => {})
   }, [])
 
-  const doLogout = async () => {
-    try { await logout() } catch { /* 忽略 */ }
-    setAuthCookie('')
-    setState({ user: null, myPlaylists: [] })
-    toast('已退出登录')
+  const goSearch = (kw) => {
+    if (!kw.trim()) return
+    navigate('search', { q: kw.trim() })
   }
 
-  // 复制登录 cookie：部署到服务器时填入 .env 的 NETEASE_COOKIE 即可固化登录态
   const copyCookie = async () => {
     const c = getAuthCookie()
     if (!c) { toast('当前没有登录 Cookie（请先扫码登录）', 'warn'); return }
@@ -54,6 +53,13 @@ export default function App() {
     } catch {
       toast('复制失败，请手动从 /login/qr/check 响应中复制', 'error')
     }
+  }
+
+  const doLogout = async () => {
+    try { await logout() } catch { /* 忽略 */ }
+    setAuthCookie('')
+    setState({ user: null, myPlaylists: [] })
+    toast('已退出登录')
   }
 
   let content
@@ -69,43 +75,83 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* 极光动态背景 */}
+      <div className="aurora" aria-hidden="true">
+        <div className="aurora-blob b1" />
+        <div className="aurora-blob b2" />
+        <div className="aurora-blob b3" />
+        <div className="aurora-vignette" />
+      </div>
+
+      {/* 侧边栏 */}
       <aside className="sidebar">
-        <div className="logo">🎧 网易云 API 演示站</div>
-        <nav className="nav">
-          {NAV.map((n) => (
-            <button
-              key={n.name}
-              className={'nav-item' + (view.name === n.name ? ' on' : '')}
-              onClick={() => navigate(n.name)}
-            >
-              {n.label}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          {user ? (
-            <div className="user-box">
-              <img className="avatar" src={user.avatarUrl + '?param=60y60'} alt="" />
-              <div className="user-meta">
-                <p className="user-name" title={user.nickname}>{user.nickname}</p>
-                <div className="user-links">
-                  <button className="link" onClick={copyCookie}>复制登录 Cookie</button>
-                  <button className="link" onClick={doLogout}>退出登录</button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <button className="btn primary block" onClick={() => setState({ loginOpen: true })}>登录（扫码）</button>
-          )}
+        <div className="sidebar-header">
+          <div className="logo" title={user ? user.nickname : '点击登录'} onClick={() => setState({ loginOpen: true })}>
+            {user ? (
+              <img className="logo-avatar" src={user.avatarUrl + '?param=100y100'} alt="" />
+            ) : (
+              <span className="logo-icon"><IconUser size={17} /></span>
+            )}
+            <span className="logo-text">MyMusic</span>
+          </div>
           <button
-            className={'link api-log-toggle' + (s.apiLogs.length ? ' has' : '')}
+            className={'sidebar-top-btn' + (s.apiLogs.length ? ' has' : '')}
+            title="API 调用日志"
             onClick={() => setState({ apiLogOpen: !s.apiLogOpen })}
           >
-            📡 API 调用日志{s.apiLogs.length ? '（' + s.apiLogs.length + '）' : ''}
+            <IconTerminal size={15} />
+            <span>{s.apiLogs.length ? s.apiLogs.length : ''}</span>
           </button>
         </div>
+
+        {/* 搜索框：回车直达搜索页 */}
+        <div className="search-box">
+          <IconSearch size={15} />
+          <input
+            type="text"
+            placeholder="搜索音乐..."
+            onKeyDown={(e) => { if (e.key === 'Enter') goSearch(e.target.value) }}
+          />
+        </div>
+
+        <nav className="nav-menu">
+          {NAV.map((n) => {
+            const Icon = n.icon
+            return (
+              <button
+                key={n.name}
+                className={'nav-item' + (view.name === n.name ? ' on' : '')}
+                onClick={() => navigate(n.name)}
+              >
+                <Icon size={19} />
+                <span>{n.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className="sidebar-footer">
+          {user ? (
+            <>
+              <div className="user-box">
+                <img className="avatar" src={user.avatarUrl + '?param=100y100'} alt="" />
+                <div className="user-meta">
+                  <p className="user-name" title={user.nickname}>{user.nickname}</p>
+                </div>
+              </div>
+              <div className="user-links">
+                <button className="link" onClick={copyCookie}>复制 Cookie</button>
+                <button className="link" onClick={doLogout}>退出登录</button>
+              </div>
+            </>
+          ) : (
+            <button className="btn block" onClick={() => setState({ loginOpen: true })}>扫码登录</button>
+          )}
+        </div>
       </aside>
+
       <main className="main">{content}</main>
+
       <PlayerBar />
       <LyricsPanel />
       <ApiLogDrawer />

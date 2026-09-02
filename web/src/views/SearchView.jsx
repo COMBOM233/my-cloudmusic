@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { search } from '../api/client.js'
-import { playAll, navigate, toast } from '../store.js'
+import { useStore, playAll, navigate, toast } from '../store.js'
 import { normalizeSongs } from '../utils.js'
 import SongRow from '../components/SongRow.jsx'
 import PlaylistCard from '../components/PlaylistCard.jsx'
@@ -14,11 +14,22 @@ const TYPES = [
 ]
 
 export default function SearchView() {
+  const { view } = useStore()
   const [kw, setKw] = useState('海阔天空')
   const [type, setType] = useState(1)
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
+
+  // 响应侧边栏搜索框：跳到本页并带上关键词时自动搜索
+  useEffect(() => {
+    const q = view.params?.q
+    if (view.name === 'search' && q && typeof q === 'string') {
+      setKw(q)
+      doSearch(q, type)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view])
 
   const doSearch = async (k = kw, t = type) => {
     const keyword = k.trim()

@@ -1,22 +1,23 @@
 import { useEffect, useState } from 'react'
 import { useStore, getState, setState, toast, nextSong, prevSong, setMode } from '../store.js'
-import { resolveSongUrl, lyric } from '../api/client.js'
+import { resolveSongUrl, lyric, likeSong } from '../api/client.js'
 import { audio } from '../audio.js'
 import { formatTime, parseLyric } from '../utils.js'
+import { IconPrev, IconPlay, IconPause, IconNext, IconRepeat, IconRepeatOne, IconShuffle, IconNote, IconHeart, IconVolume } from './icons.jsx'
 
-// 底部播放器：全局唯一 <audio> 的控制中心
-// 切歌时调用 /song/url 拿播放地址、/lyric 拿歌词
+// 底部播放器（Melodia 风格）：顶部发光进度条 + 圆形播放键 + 等宽时间
 export default function PlayerBar() {
-  const { queue, queueIndex, playing, mode } = useStore()
+  const { queue, queueIndex, playing, mode, user } = useStore()
   const song = queue[queueIndex] || null
   const [progress, setProgress] = useState(0)   // 0-100
   const [current, setCurrent] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(0.8)
   const [loading, setLoading] = useState(false)
-  const [quality, setQuality] = useState(null)  // 当前实际音质 { br, level, source }
+  const [quality, setQuality] = useState(null)
+  const [liked, setLiked] = useState(false)
 
-  // 当前歌曲变化 → 获取播放地址 + 歌词
+  // 当前歌曲变化 → 多级取流 + 歌词
   useEffect(() => {
     if (!song) {
       audio.pause()
@@ -32,8 +33,7 @@ export default function PlayerBar() {
     setProgress(0)
     setDuration(0)
     setQuality(null)
-    // 多级取流：标准接口 → v1(超高) → v1(无损) → 下载接口（详见 client.js 的 resolveSongUrl）
-    // 音质取决于登录账号：VIP 账号返回完整音质，未登录多为 128k 试听
+    // 多级取流：标准 → v1(exhigh) → v1(lossless) → download（详见 client.js resolveSongUrl）
     resolveSongUrl(song.id)
       .then((res) => {
         if (cancelled) return
@@ -53,7 +53,6 @@ export default function PlayerBar() {
           toast('获取播放地址失败：' + e.message, 'error')
         }
       })
-    // /lyric：同步歌词
     lyric(song.id)
       .then((res) => setState({ currentLyric: parseLyric(res.lrc?.lyric || '') }))
       .catch(() => setState({ currentLyric: [] }))
@@ -61,7 +60,7 @@ export default function PlayerBar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [song?.id])
 
-  // 绑定 audio 事件（只绑定一次；回调里通过 getState 读取最新状态避免闭包过期）
+  // 绑定 audio 事件（播放进度、结束行为）
   useEffect(() => {
     const onTime = () => {
       setCurrent(audio.currentTime)
@@ -71,8 +70,7 @@ export default function PlayerBar() {
     const onPlay = () => setState({ playing: true })
     const onPause = () => setState({ playing: false })
     const onEnded = () => {
-      // 播放结束：单曲循环→重播本首；列表循环→顺序到尾回第一首；随机（洗牌）→沿洗牌顺序播下一首
-      // （列表循环与随机播放的逻辑都在 store.js 的 nextSong 里按 mode 处理）
+      // 单曲循环→重播本首；列表循环/随机（洗牌）→交给 nextSong 按 mode 处理
       const { mode } = getState()
       if (mode === 'single') {
         audio.currentTime = 0
@@ -99,7 +97,36 @@ export default function PlayerBar() {
   // 音量
   useEffect(() => { audio.volume = volume }, [volume])
 
-  // 音质标签：根据取流返回的 level / br 展示（登录 VIP 后这里会从 128k 试听变为 320k/无损）
+  if (!song) {
+    return <div className="playerbar empty">搜索或点击歌曲开始播放 · MyMusic</div>
+  }
+
+  const togglePlay = () => {
+    if (!audio.src) return
+    if (audio.paused) audio.play().catch(() => {})
+    else audio.pause()
+  }
+
+  // 点击顶部进度条跳转
+  const seekByClick = (e) => {
+    if (!audio.duration) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
+    audio.currentTime = ratio * audio.duration
+    setProgress(ratio * 100)
+  }
+
+  // 红心
+  const handleLike = async () => {
+    if (!user) { toast('请先登录', 'warn'); setState({ loginOpen: true }); return }
+    try {
+      await likeSong(song.id, !liked)
+      setLiked(!liked)
+      toast(liked ? '已取消红心' : '已红心 ❤️')
+    } catch (e) { toast('操作失败：' + e.message, 'error') }
+  }
+
+  // 音质标签
   const qLabel = (() => {
     if (!quality) return ''
     const lvl = (quality.level || '').toLowerCase()
@@ -111,57 +138,62 @@ export default function PlayerBar() {
     return br >= 320 ? br + 'k' : br + 'k·试听'
   })()
 
-  if (!song) {
-    return <div className="playerbar empty">搜索或点击任意歌曲开始播放 🎵（播放地址来自 /song/url 多级取流）</div>
-  }
-
-  const togglePlay = () => {
-    if (!audio.src) return
-    if (audio.paused) audio.play().catch(() => {})
-    else audio.pause()
-  }
-  const onSeek = (e) => {
-    const v = +e.target.value
-    if (audio.duration) audio.currentTime = (v / 100) * audio.duration
-    setProgress(v)
-  }
-  const modeLabel = { order: '列表循环', single: '单曲循环', random: '随机播放' }[mode]
+  const modeIcon = mode === 'random' ? <IconShuffle size={19} /> : mode === 'single' ? <IconRepeatOne size={19} /> : <IconRepeat size={19} />
+  const modeLabel = mode === 'random' ? '随机播放（洗牌）' : mode === 'single' ? '单曲循环' : '列表循环'
 
   return (
     <div className="playerbar">
-      <div className="pb-info" title="查看歌曲详情" onClick={() => setState({ songDetailId: song.id })}>
-        {song.picUrl ? <img className="pb-cover" src={song.picUrl + '?param=60y60'} alt="" /> : <div className="pb-cover placeholder" />}
-        <div className="pb-meta">
+      {/* 顶部发光进度条 */}
+      <div className="pb-progress-top" onClick={seekByClick}>
+        <div className="pb-progress-track">
+          <div className="pb-progress-fill" style={{ width: progress + '%' }} />
+          <div className="pb-progress-handle" style={{ left: progress + '%' }} />
+        </div>
+      </div>
+
+      {/* 左：封面 + 信息 + 红心 */}
+      <div className="pb-left">
+        {song.picUrl
+          ? <img className="pb-cover" src={song.picUrl + '?param=120y120'} alt="" onClick={() => setState({ songDetailId: song.id })} />
+          : <div className="pb-cover placeholder" onClick={() => setState({ songDetailId: song.id })} />}
+        <div className="pb-meta" onClick={() => setState({ songDetailId: song.id })}>
           <p className="pb-name">
             {song.name}
-            {qLabel && (
-              <span className="pb-quality" title={quality ? '音质来源：' + quality.source : ''}>{qLabel}</span>
-            )}
+            {qLabel && <span className="pb-quality" title={quality ? '音质来源：' + quality.source : ''}>{qLabel}</span>}
           </p>
           <p className="pb-artist">{song.artists}</p>
         </div>
+        <button className={'pb-like' + (liked ? ' on' : '')} title="红心" onClick={handleLike}>
+          <IconHeart size={20} filled={liked} />
+        </button>
       </div>
+
+      {/* 中：控制 + 时间 */}
       <div className="pb-center">
         <div className="pb-btns">
-          <button className="btn-icon" title={'播放模式：' + modeLabel} onClick={() => setMode(mode === 'order' ? 'single' : mode === 'single' ? 'random' : 'order')}>
-            {mode === 'random' ? '🔀' : mode === 'single' ? '🔁' : '🔂'}
+          <button className={'pb-ctl' + (mode !== 'order' ? ' mode-on' : '')} title={'播放模式：' + modeLabel} onClick={() => setMode(mode === 'order' ? 'single' : mode === 'single' ? 'random' : 'order')}>
+            {modeIcon}
           </button>
-          <button className="btn-icon" title="上一首" onClick={prevSong}>⏮</button>
+          <button className="pb-ctl" title="上一首" onClick={prevSong}><IconPrev size={19} /></button>
           <button className="btn-play" title={playing ? '暂停' : '播放'} onClick={togglePlay}>
-            {loading ? '⋯' : playing ? '⏸' : '▶'}
+            {loading ? <span style={{ fontSize: 12 }}>···</span> : playing ? <IconPause size={18} /> : <IconPlay size={18} className="ic-play" />}
           </button>
-          <button className="btn-icon" title="下一首" onClick={nextSong}>⏭</button>
-          <button className="btn-icon" title="歌词" onClick={() => setState({ lyricsOpen: !useStore().lyricsOpen })}>📃</button>
+          <button className="pb-ctl" title="下一首" onClick={nextSong}><IconNext size={19} /></button>
+          <button className="pb-ctl" title="歌词" onClick={() => setState({ lyricsOpen: !getState().lyricsOpen })}><IconNote size={19} /></button>
         </div>
-        <div className="pb-progress">
-          <span className="muted">{formatTime(current)}</span>
-          <input className="range" type="range" min="0" max="100" step="0.1" value={progress} onChange={onSeek} />
-          <span className="muted">{formatTime(duration)}</span>
+        <div className="pb-time">
+          <span>{formatTime(current)}</span>
+          <span className="sep">/</span>
+          <span>{formatTime(duration)}</span>
         </div>
       </div>
-      <div className="pb-volume" title="音量">
-        <span>🔊</span>
-        <input className="range vol" type="range" min="0" max="1" step="0.01" value={volume} onChange={(e) => setVolume(+e.target.value)} />
+
+      {/* 右：音量 */}
+      <div className="pb-right">
+        <div className="pb-volume">
+          <IconVolume size={19} />
+          <input className="range vol" type="range" min="0" max="1" step="0.01" value={volume} onChange={(e) => setVolume(+e.target.value)} />
+        </div>
       </div>
     </div>
   )
