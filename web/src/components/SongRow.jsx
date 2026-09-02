@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useStore, setState, playSong, toast, addToPlaylist } from '../store.js'
+import { useStore, setState, playSong, toast, addToPlaylist, navigate } from '../store.js'
 import { likeSong } from '../api/client.js'
 import { formatTime } from '../utils.js'
 
@@ -28,8 +28,31 @@ export default function SongRow({ song, index, queue, manage = false, onRemove }
         <img className="song-cover" src={song.picUrl + '?param=60y60'} alt="" loading="lazy" />
       ) : <span className="song-cover placeholder" />}
       <span className="song-name">{song.name}</span>
-      <span className="song-artist">{song.artists}</span>
-      <span className="song-album">{song.album}</span>
+      {/* 歌手：逐个可点击跳转歌手页 */}
+      <span className="song-artist">
+        {(song.artistsList && song.artistsList.length ? song.artistsList : [{ id: null, name: song.artists }]).map((a, i) => (
+          <span key={i}>
+            {i > 0 && <span className="cell-sep"> / </span>}
+            {a.id ? (
+              <button
+                className="cell-link"
+                title={'查看歌手：' + a.name}
+                onClick={(e) => { e.stopPropagation(); navigate('artist', { id: a.id }) }}
+              >{a.name}</button>
+            ) : <span>{a.name}</span>}
+          </span>
+        ))}
+      </span>
+      {/* 专辑：可点击跳转专辑页 */}
+      <span className="song-album">
+        {song.albumId ? (
+          <button
+            className="cell-link"
+            title={'查看专辑：' + song.album}
+            onClick={(e) => { e.stopPropagation(); navigate('album', { id: song.albumId }) }}
+          >{song.album}</button>
+        ) : song.album}
+      </span>
       <span className="song-duration">{formatTime(song.duration / 1000)}</span>
       <span className="song-actions" onClick={(e) => e.stopPropagation()}>
         <button className="btn-icon" title="播放" onClick={() => playSong(song, queue)}>▶</button>

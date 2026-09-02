@@ -336,6 +336,15 @@ input:focus { border-color: rgba(255,255,255,.22); }
 /* ============================================================
    歌曲列表行
    ============================================================ */
+/* 歌曲行内可点击的 歌手/专辑 文本 */
+.cell-link {
+  border: none; background: none; padding: 0; margin: 0;
+  color: inherit; font: inherit; cursor: pointer; text-align: left;
+  white-space: nowrap; transition: color .12s;
+}
+.cell-link:hover { color: var(--accent-hover); text-decoration: underline; }
+.cell-sep { color: var(--text-disabled); }
+
 .song-row {
   display: flex; align-items: center; gap: 12px;
   padding: 7px 12px; border-radius: var(--radius-md); cursor: pointer;
