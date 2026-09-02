@@ -17,8 +17,8 @@ echo "==> 重启 API 服务"
 pm2 restart ncm-api || pm2 start start-demo.js --name ncm-api
 
 # 若前端也部署在服务器（public/ 模式，非 GitHub Pages），取消下面三行注释：
-# cd ../web
-# npm run build
-# rm -rf ../NeteaseCloudMusicApi/public/assets && cp -r dist/* ../NeteaseCloudMusicApi/public/
+cd ../web
+npm run build
+rm -rf ../NeteaseCloudMusicApi/public/assets && cp -r dist/* ../NeteaseCloudMusicApi/public/
 
 echo "==> 更新完成"
