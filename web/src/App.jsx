@@ -14,7 +14,8 @@ import LyricsPanel from './components/LyricsPanel.jsx'
 import ApiLogDrawer from './components/ApiLogDrawer.jsx'
 import LoginModal from './components/LoginModal.jsx'
 import SongDetailModal from './components/SongDetailModal.jsx'
-import { IconHome, IconCompass, IconLibrary, IconSearch, IconBook, IconTerminal, IconUser } from './components/icons.jsx'
+import { IconHome, IconCompass, IconLibrary, IconSearch, IconBook, IconTerminal, IconUser, IconUsers } from './components/icons.jsx'
+import EveryoneView from './views/EveryoneView.jsx'
 
 // 侧边栏导航（Melodia 风格：SVG 图标 + 激活态强调条）
 const NAV = [
@@ -22,6 +23,7 @@ const NAV = [
   { name: 'playlists', label: '发现', icon: IconCompass },
   { name: 'my', label: '我的歌单', icon: IconLibrary },
   { name: 'search', label: '搜索', icon: IconSearch },
+  { name: 'everyone', label: '大家在听', icon: IconUsers },
   { name: 'docs', label: 'API 文档', icon: IconBook },
 ]
 
@@ -67,6 +69,7 @@ export default function App() {
   else if (view.name === 'playlists') content = <PlaylistsView />
   else if (view.name === 'my') content = <MyPlaylistsView />
   else if (view.name === 'search') content = <SearchView />
+  else if (view.name === 'everyone') content = <EveryoneView />
   else if (view.name === 'playlist') content = <PlaylistDetailView id={view.params?.id} manage={!!view.params?.manage} />
   else if (view.name === 'artist') content = <ArtistView id={view.params?.id} />
   else if (view.name === 'album') content = <AlbumView id={view.params?.id} />

@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react'
-import { useStore, getState, setState, toast, nextSong, prevSong, setMode } from '../store.js'
-import { resolveSongUrl, lyric, likeSong } from '../api/client.js'
+import { useStore, getState, setState, toast, nextSong, prevSong, setMode, viewerInfo } from '../store.js'
+import { resolveSongUrl, lyric, reportNowPlaying } from '../api/client.js'
 import { audio } from '../audio.js'
 import { formatTime, parseLyric } from '../utils.js'
 import { IconPrev, IconPlay, IconPause, IconNext, IconRepeat, IconRepeatOne, IconShuffle, IconNote, IconHeart, IconVolume } from './icons.jsx'
+import { useLike } from '../useLike.js'
 
 // 底部播放器（Melodia 风格）：顶部发光进度条 + 圆形播放键 + 等宽时间
 export default function PlayerBar() {
-  const { queue, queueIndex, playing, mode, user } = useStore()
+  const { queue, queueIndex, playing, mode } = useStore()
   const song = queue[queueIndex] || null
+  const { liked, toggle: toggleLike } = useLike(song?.id)
   const [progress, setProgress] = useState(0)   // 0-100
   const [current, setCurrent] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(0.8)
   const [loading, setLoading] = useState(false)
   const [quality, setQuality] = useState(null)
-  const [liked, setLiked] = useState(false)
 
   // 当前歌曲变化 → 多级取流 + 歌词
   useEffect(() => {
@@ -97,6 +98,25 @@ export default function PlayerBar() {
   // 音量
   useEffect(() => { audio.volume = volume }, [volume])
 
+  // 「大家在听」上报：真正开始播放时上报，播放期间每分钟心跳续期
+  useEffect(() => {
+    if (!song || !getState().playing || !audio.src) return
+    const report = () => {
+      reportNowPlaying({
+        ...viewerInfo(),
+        songId: song.id,
+        songName: song.name,
+        artists: song.artists,
+        album: song.album,
+        picUrl: song.picUrl || '',
+      }).catch(() => {})
+    }
+    report()
+    const timer = setInterval(report, 60000)
+    return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [song?.id, playing])
+
   if (!song) {
     return <div className="playerbar empty">搜索或点击歌曲开始播放 · MyMusic</div>
   }
@@ -114,16 +134,6 @@ export default function PlayerBar() {
     const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
     audio.currentTime = ratio * audio.duration
     setProgress(ratio * 100)
-  }
-
-  // 红心
-  const handleLike = async () => {
-    if (!user) { toast('请先登录', 'warn'); setState({ loginOpen: true }); return }
-    try {
-      await likeSong(song.id, !liked)
-      setLiked(!liked)
-      toast(liked ? '已取消红心' : '已红心 ❤️')
-    } catch (e) { toast('操作失败：' + e.message, 'error') }
   }
 
   // 音质标签
@@ -163,7 +173,7 @@ export default function PlayerBar() {
           </p>
           <p className="pb-artist">{song.artists}</p>
         </div>
-        <button className={'pb-like' + (liked ? ' on' : '')} title="红心" onClick={handleLike}>
+        <button className={'pb-like' + (liked ? ' on' : '')} title={liked ? '取消红心' : '红心'} onClick={toggleLike}>
           <IconHeart size={20} filled={liked} />
         </button>
       </div>

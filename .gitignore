@@ -16,5 +16,8 @@ NeteaseCloudMusicApi/public/index.html
 .env
 NeteaseCloudMusicApi/.env
 
+# 运行时数据（大家在听的上报记录）
+NeteaseCloudMusicApi/listening.json
+
 # 参考项目（体积大，不需要提交）
 _reference/

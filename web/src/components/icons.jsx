@@ -159,6 +159,15 @@ export const IconTrash = ({ size, ...p }) => (
   </svg>
 )
 
+export const IconUsers = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="9" cy="8" r="3.2" />
+    <path d="M3.2 19a5.8 5.8 0 0 1 11.6 0" />
+    <circle cx="16.8" cy="9.5" r="2.6" />
+    <path d="M15.4 14.6a4.9 4.9 0 0 1 5.4 4.4" />
+  </svg>
+)
+
 export const IconMusic = ({ size, ...p }) => (
   <svg {...base(size)} {...p}>
     <path d="M9 18V5l12-2v13" />

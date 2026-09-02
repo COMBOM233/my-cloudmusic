@@ -251,3 +251,10 @@ export const likelist = (uid) => request('/likelist', { uid })
 
 // 文档：/like 红心/取消红心某首歌（需登录）like=true|false
 export const likeSong = (id, like = true) => request('/like', { id, like })
+
+// ---------- 9. 本站自建功能：大家在听 ----------
+// 路由由 NeteaseCloudMusicApi/module/nowplaying.js 提供（不调用网易云）
+// 上报当前正在播放（vid 标识听众，payload 含歌曲信息）
+export const reportNowPlaying = (payload) => request('/nowplaying', { ...payload, action: 'report' })
+// 查询大家正在听（t 为时间戳，绕过服务端 2 分钟响应缓存，保证轮询实时）
+export const fetchNowPlaying = () => request('/nowplaying', { action: 'list', t: Date.now() })

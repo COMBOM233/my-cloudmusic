@@ -139,6 +139,22 @@ export function prevSong() {
   setState({ queueIndex: idx, playing: true })
 }
 
+// ---------- 听众身份（大家在听上报用） ----------
+// 登录用户用 userId；未登录用户用 localStorage 持久化的匿名 id（同浏览器多标签视为同一听众）
+export function viewerInfo() {
+  const u = state.user
+  if (u && u.userId) {
+    return { vid: String(u.userId), name: u.nickname || '用户' + u.userId, avatar: u.avatarUrl || '' }
+  }
+  let vid = ''
+  try { vid = localStorage.getItem('ncm_viewer_id') || '' } catch { /* 忽略 */ }
+  if (!vid) {
+    vid = 'guest-' + Math.random().toString(36).slice(2, 10)
+    try { localStorage.setItem('ncm_viewer_id', vid) } catch { /* 忽略 */ }
+  }
+  return { vid, name: '游客', avatar: '' }
+}
+
 // ---------- 我的歌单 ----------
 // 拉取当前用户自己创建的歌单（用于「加入歌单」菜单和「我的歌单」页）
 export async function refreshMyPlaylists(uid) {
